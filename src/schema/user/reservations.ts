@@ -6,23 +6,23 @@ export default {
       hallId: z.coerce.number(),
       start: z.coerce.date(),
       end: z.coerce.date(),
-      services: z.array(z.coerce.number())
+      services: z.string().trim(),
     }),
   },
   Update: {
     Params: z.object({
-      id: z.coerce.number()
+      id: z.coerce.number(),
     }),
     Body: z.object({
       start: z.coerce.date(),
       end: z.coerce.date(),
-      services: z.array(z.coerce.number()),
-      removedServices: z.array(z.coerce.number())
+      services: z.string().trim(),
+      removedServices: z.string().trim(),
     }),
   },
   Remove: {
     Params: z.object({
-      id: z.coerce.number()
-    })
-  }
+      id: z.coerce.number(),
+    }),
+  },
 } as const;

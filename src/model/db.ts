@@ -51,7 +51,7 @@ export const Hall = sequelize.define<Tables["Hall"]>("hall", {
     allowNull: false,
   },
   description: {
-    type: DataTypes.TEXT,
+    type: DataTypes.STRING(1000),
     allowNull: false,
   },
   location: {
@@ -100,7 +100,7 @@ export const HallImages = sequelize.define<Tables["HallImages"]>(
       autoIncrement: true,
     },
     image: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     hallId: {

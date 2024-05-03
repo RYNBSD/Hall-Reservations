@@ -107,8 +107,13 @@ export default {
       },
       { fields: ["userId", "hallId", "start", "end"], returning: true }
     );
+
+    const servicesArr = services
+      .split(",")
+      .map((service) => parseInt(service.trim()))
+      .filter((service) => !isNaN(service) || service === 0);
     await UserReservationServices.bulkCreate(
-      services.map((service) => ({
+      servicesArr.map((service) => ({
         serviceId: service,
         reservationId: reservation.dataValues.id,
       })),
@@ -128,33 +133,54 @@ export default {
     const { start, end, services, removedServices } = Body.parse(req.body);
 
     const user = res.locals.user!;
+
     const { UserReservations, UserReservationServices } = model.db;
 
-    const [_, reservation] = await UserReservations.update(
+    const reservation = await UserReservations.findOne({
+      where: {
+        id,
+        userId: user.dataValues.id,
+      },
+      plain: true,
+      limit: 1,
+    });
+    if (reservation === null) throw new Error("Reservation don't exists");
+
+    reservation.update(
       {
         start,
         end,
       },
       {
         fields: ["start", "end"],
-        where: { userId: user.dataValues.id, id },
         returning: true,
       }
     );
     await UserReservationServices.destroy({
       force: true,
-      where: { serviceId: removedServices },
+      where: {
+        serviceId: removedServices
+          .split(",")
+          .map((service) => parseInt(service.trim()))
+          .filter((service) => !isNaN(service) || service === 0),
+      },
     });
+
+    const servicesArr = services
+      .split(",")
+      .map((service) => Number(service.trim()))
+      .filter((service) => !isNaN(service) || service === 0);
+
     await Promise.all(
-      services.map((service) =>
+      servicesArr.map((service) =>
         UserReservationServices.findOrCreate({
           where: {
             serviceId: service,
-            reservationId: reservation[0].dataValues.id,
+            reservationId: reservation.dataValues.id,
           },
           defaults: {
             serviceId: service,
-            reservationId: reservation[0].dataValues.id,
+            reservationId: reservation.dataValues.id,
           },
           fields: ["serviceId", "reservationId"],
         })
@@ -167,17 +193,23 @@ export default {
   ) {
     const { Params } = Remove;
     const { id } = Params.parse(req.params);
-    const user = res.locals.user!;
 
+    const user = res.locals.user!;
     const { UserReservations } = model.db;
-    await UserReservations.destroy({
-      force: true,
+
+    const reservation = await UserReservations.findOne({
       where: {
         id,
         userId: user.dataValues.id,
       },
+      plain: true,
+      limit: 1,
     });
+    if (reservation === null) throw new Error("Reservation don't exists");
 
+    await reservation.destroy({
+      force: true,
+    });
     res.status(StatusCodes.OK).json({
       success: true,
     });

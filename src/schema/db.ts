@@ -22,7 +22,7 @@ export const Hall = z
     name: z.string(),
     description: z.string(),
     location: z.string(),
-    price: z.string(),
+    price: z.number(),
     people: z.number(),
   })
   .merge(Id)
