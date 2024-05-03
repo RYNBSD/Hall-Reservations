@@ -13,8 +13,12 @@ halls.get("/", handleAsync(all));
 
 halls.get("/:id", handleAsync(hall));
 
-halls.post("/", handleAsync(upload.none()), handleAsync(create));
+halls.post(
+  "/",
+  handleAsync(upload.fields([{ name: "images" }, { name: "servicesImage" }])),
+  handleAsync(create)
+);
 
-halls.put("/:id", handleAsync(upload.none()), handleAsync(update));
+halls.put("/:id", handleAsync(upload.array("images")), handleAsync(update));
 
 halls.delete("/:id", handleAsync(remove));

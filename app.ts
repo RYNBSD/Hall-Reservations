@@ -7,6 +7,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import morgan from "morgan";
+import compression from "compression";
 import { StatusCodes } from "http-status-codes";
 import { router } from "./src/router/index.js";
 
@@ -16,6 +17,7 @@ app.enable("json escape");
 app.enable("etag");
 
 app.use(cors());
+app.use(compression({ level: 9 }));
 app.use(helmet());
 app.use(morgan(IS_PRODUCTION ? "combined" : "dev"));
 app.use(express.json());

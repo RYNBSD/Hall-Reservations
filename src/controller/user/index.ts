@@ -3,8 +3,12 @@ import type { Transaction } from "sequelize";
 import type { TResponse } from "../../types/index.js";
 import { StatusCodes } from "http-status-codes";
 import { model } from "../../model/index.js";
+import { schema } from "../../schema/index.js";
 import reservations from "./reservations.js";
 import halls from "./halls.js";
+import { util } from "../../util/index.js";
+
+const { Update } = schema.user;
 
 export default {
   async profile(
@@ -33,14 +37,25 @@ export default {
     });
   },
   async update(
-    _req: Request,
+    req: Request,
     res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
     _next: NextFunction,
     transaction: Transaction
   ) {
-    const user = res.locals.user!;
+    const { Body } = Update;
+    const { username, email, phone, password } = Body.parse(req.body);
 
-    await user.update({}, { transaction });
+    const user = res.locals.user!;
+    const { bcrypt } = util;
+
+    await user.update(
+      { username, email, phone, password: bcrypt.hash(password) },
+      {
+        fields: ["username", "email", "phone", "password"],
+        returning: true,
+        transaction,
+      }
+    );
     res.status(StatusCodes.OK).json({
       success: true,
       data: {
