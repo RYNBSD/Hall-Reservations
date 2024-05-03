@@ -4,7 +4,7 @@ import type { TResponse } from "../../types/index.js";
 import { StatusCodes } from "http-status-codes";
 import { model } from "../../model/index.js";
 import reservations from "./reservations.js";
-import hall from "./hall.js";
+import halls from "./halls.js";
 
 export default {
   async profile(
@@ -61,5 +61,5 @@ export default {
       });
   },
   reservations,
-  hall,
+  halls,
 } as const;

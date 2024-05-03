@@ -1,16 +1,21 @@
 import { Router } from "express";
 import { util } from "../../util/index.js";
+import { controller } from "../../controller/index.js";
+import { config } from "../../config/index.js";
 import { middleware } from "../../middleware/index.js";
-import controller from "../../controller/index.js";
+import { halls } from "./halls.js";
 
 export const user = Router();
 
 const { profile, update, remove } = controller.user;
-const { isAuthenticated } = middleware.fn;
+const { isOwner } = middleware.user;
 const { handleAsync } = util.fn;
+const { upload } = config;
 
-user.get("/", handleAsync(isAuthenticated), handleAsync(profile));
+user.get("/", handleAsync(profile));
 
-user.put("/", handleAsync(isAuthenticated), handleAsync(update));
+user.put("/", handleAsync(upload.none()), handleAsync(update));
 
-user.put("/", handleAsync(isAuthenticated), handleAsync(remove));
+user.delete("/", handleAsync(remove));
+
+user.use("/halls", handleAsync(isOwner), halls);

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { util } from "../util/index.js";
-import controller from "../controller/index.js";
+import { controller } from "../controller/index.js";
 import { config } from "../config/index.js";
 import { middleware } from "../middleware/index.js";
 
