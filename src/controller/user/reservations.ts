@@ -1,16 +1,18 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import type { TResponse } from "../../types/index.js";
 import { model } from "../../model/index.js";
 import { StatusCodes } from "http-status-codes";
 import { schema } from "../../schema/index.js";
-import { Op } from "sequelize";
+import { Op, type Transaction } from "sequelize";
 
 const { Create, Update, Remove } = schema.user.reservations;
 
 export default {
   async all(
     _req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const user = res.locals.user!;
 
@@ -20,6 +22,7 @@ export default {
       include: {
         model: Hall,
       },
+      transaction,
     });
 
     res.status(StatusCodes.OK).json({
@@ -31,7 +34,9 @@ export default {
   },
   async reservation(
     _req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const user = res.locals.user!;
 
@@ -60,6 +65,7 @@ export default {
           ],
         },
       ],
+      transaction,
     });
     if (reservation === null) throw new Error("Reservation don't exists");
 
@@ -72,7 +78,9 @@ export default {
   },
   async create(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Body } = Create;
     const { hallId, start, end, services } = Body.parse(req.body);
@@ -94,6 +102,7 @@ export default {
       },
       plain: true,
       limit: 1,
+      transaction,
     });
     if (isReservationExists !== null)
       throw new Error("reservation already exists");
@@ -105,7 +114,11 @@ export default {
         start,
         end,
       },
-      { fields: ["userId", "hallId", "start", "end"], returning: true }
+      {
+        fields: ["userId", "hallId", "start", "end"],
+        returning: true,
+        transaction,
+      }
     );
 
     const servicesArr = services
@@ -117,7 +130,7 @@ export default {
         serviceId: service,
         reservationId: reservation.dataValues.id,
       })),
-      { fields: ["reservationId", "serviceId"] }
+      { fields: ["reservationId", "serviceId"], transaction }
     );
 
     res.status(StatusCodes.CREATED).json({
@@ -126,7 +139,9 @@ export default {
   },
   async update(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Body, Params } = Update;
     const { id } = Params.parse(req.params);
@@ -143,6 +158,7 @@ export default {
       },
       plain: true,
       limit: 1,
+      transaction,
     });
     if (reservation === null) throw new Error("Reservation don't exists");
 
@@ -154,6 +170,7 @@ export default {
       {
         fields: ["start", "end"],
         returning: true,
+        transaction,
       }
     );
     await UserReservationServices.destroy({
@@ -164,6 +181,7 @@ export default {
           .map((service) => parseInt(service.trim()))
           .filter((service) => !isNaN(service) || service === 0),
       },
+      transaction,
     });
 
     const servicesArr = services
@@ -183,13 +201,16 @@ export default {
             reservationId: reservation.dataValues.id,
           },
           fields: ["serviceId", "reservationId"],
+          transaction,
         })
       )
     );
   },
   async remove(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Params } = Remove;
     const { id } = Params.parse(req.params);
@@ -204,11 +225,13 @@ export default {
       },
       plain: true,
       limit: 1,
+      transaction,
     });
     if (reservation === null) throw new Error("Reservation don't exists");
 
     await reservation.destroy({
       force: true,
+      transaction,
     });
     res.status(StatusCodes.OK).json({
       success: true,

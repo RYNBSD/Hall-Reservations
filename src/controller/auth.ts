@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import type { Transaction } from "sequelize";
 import type { TResponse } from "../types/index.js";
 import { model } from "../model/index.js";
 import { StatusCodes } from "http-status-codes";
@@ -8,7 +9,12 @@ import { util } from "../util/index.js";
 const { SignUp, SignIn } = schema.auth;
 
 export default {
-  async signUp(req: Request, res: Response<TResponse["Body"]["Success"]>) {
+  async signUp(
+    req: Request,
+    res: Response<TResponse["Body"]["Success"]>,
+    _next: NextFunction,
+    transaction: Transaction
+  ) {
     const { Body } = SignUp;
     const { username, email, phone, password, role } = Body.parse(req.body);
 
@@ -19,6 +25,7 @@ export default {
       {
         fields: ["username", "email", "phone", "password", "role"],
         returning: true,
+        transaction,
       }
     );
 
@@ -29,7 +36,12 @@ export default {
       },
     });
   },
-  async signIn(req: Request, res: Response<TResponse["Body"]["Success"]>) {
+  async signIn(
+    req: Request,
+    res: Response<TResponse["Body"]["Success"]>,
+    _next: NextFunction,
+    transaction: Transaction
+  ) {
     const { Body } = SignIn;
     const { email, password } = Body.parse(req.body);
 
@@ -38,6 +50,7 @@ export default {
       where: { email },
       limit: 1,
       plain: true,
+      transaction,
     });
     if (user === null) throw new Error("User nor found");
 

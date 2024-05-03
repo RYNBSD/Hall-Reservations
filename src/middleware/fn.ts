@@ -1,10 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
+import type { Transaction } from "sequelize";
 import { model } from "../model/index.js";
 
 export async function isAuthenticated(
   req: Request,
   res: Response<never>,
-  next: NextFunction
+  next: NextFunction,
+  transaction: Transaction
 ) {
   const id = req.session.user?.id ?? 0;
 
@@ -13,6 +15,7 @@ export async function isAuthenticated(
     where: { id },
     limit: 1,
     plain: true,
+    transaction,
   });
   if (user === null) throw new Error("User not found");
 
@@ -22,8 +25,9 @@ export async function isAuthenticated(
 
 export async function isNotAuthenticated(
   req: Request,
-  res: Response<never>,
-  next: NextFunction
+  _res: Response<never>,
+  next: NextFunction,
+  transaction: Transaction
 ) {
   const id = req.session.user?.id ?? 0;
 
@@ -32,9 +36,9 @@ export async function isNotAuthenticated(
     where: { id },
     limit: 1,
     plain: true,
+    transaction,
   });
   if (user !== null) throw new Error("User already authenticated");
 
-  // res.locals.user = { ...res.locals, user };
   return next();
 }

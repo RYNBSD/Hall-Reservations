@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import type { Transaction } from "sequelize";
 import type { TResponse } from "../../types/index.js";
 import { model } from "../../model/index.js";
 import { StatusCodes } from "http-status-codes";
@@ -9,15 +10,21 @@ const { Create, Update, Remove } = schema.user.hall;
 export default {
   async all(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {},
   async hall(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {},
   async create(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Body } = Create;
     const { name, description, location, price, people } = Body.parse(req.body);
@@ -44,6 +51,7 @@ export default {
           "userId",
         ],
         returning: true,
+        transaction,
       }
     );
 
@@ -62,7 +70,7 @@ export default {
 
     await HallImages.bulkCreate(
       imagesArr.map((image) => ({ hallId: hall.dataValues.id, image })),
-      { fields: ["hallId", "image"] }
+      { fields: ["hallId", "image"], transaction }
     );
     res.status(StatusCodes.CREATED).json({
       success: true,
@@ -74,7 +82,9 @@ export default {
   },
   async update(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Body, Params } = Update;
     const { id } = Params.parse(req.params);
@@ -88,6 +98,7 @@ export default {
       where: { id, userId: user.dataValues.id },
       plain: true,
       limit: 1,
+      transaction,
     });
     if (hall === null) throw new Error("Hall not found");
 
@@ -96,6 +107,7 @@ export default {
       {
         fields: ["name", "description", "location", "price", "people"],
         returning: true,
+        transaction,
       }
     );
 
@@ -106,6 +118,7 @@ export default {
     await HallImages.destroy({
       force: true,
       where: { hallId: hall.dataValues.id, id: removedImagesArr },
+      transaction,
     });
 
     const images = req.files;
@@ -120,11 +133,12 @@ export default {
       .map((image) => Buffer.from(image.buffer).toString("base64url"));
     await HallImages.bulkCreate(
       imagesArr.map((image) => ({ hallId: hall.dataValues.id, image })),
-      { fields: ["hallId", "image"] }
+      { fields: ["hallId", "image"], transaction }
     );
 
     const imagesList = await HallImages.findAll({
       where: { hallId: hall.dataValues.id },
+      transaction,
     });
 
     res.status(StatusCodes.OK).json({
@@ -137,7 +151,9 @@ export default {
   },
   async remove(
     req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const { Params } = Remove;
     const { id } = Params.parse(req.params);
@@ -149,11 +165,13 @@ export default {
       where: { userId: user.dataValues.id, id },
       plain: true,
       limit: 1,
+      transaction,
     });
     if (hall === null) throw new Error("Hall don't exists");
 
     await hall.destroy({
       force: true,
+      transaction,
     });
     res.status(StatusCodes.OK).json({
       success: true,

@@ -1,4 +1,5 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
+import type { Transaction } from "sequelize";
 import type { TResponse } from "../../types/index.js";
 import { StatusCodes } from "http-status-codes";
 import { model } from "../../model/index.js";
@@ -8,7 +9,9 @@ import hall from "./hall.js";
 export default {
   async profile(
     _req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const user = res.locals.user!;
 
@@ -18,6 +21,7 @@ export default {
       include: {
         model: Hall,
       },
+      transaction,
     });
 
     res.status(StatusCodes.OK).json({
@@ -29,12 +33,14 @@ export default {
     });
   },
   async update(
-    req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    _req: Request,
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const user = res.locals.user!;
 
-    await user.update({});
+    await user.update({}, { transaction });
     res.status(StatusCodes.OK).json({
       success: true,
       data: {
@@ -44,10 +50,12 @@ export default {
   },
   async remove(
     _req: Request,
-    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>,
+    _next: NextFunction,
+    transaction: Transaction
   ) {
     const user = res.locals.user!;
-    await user.destroy({ force: true }),
+    await user.destroy({ force: true, transaction }),
       res.status(StatusCodes.OK).json({
         success: true,
       });
