@@ -2,3 +2,4 @@ node_modules
 js
 public
 .env
+db.sqlite
