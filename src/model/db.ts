@@ -30,15 +30,6 @@ export const User = sequelize.define<Tables["User"]>("user", {
     allowNull: false,
   },
 });
-User.addHook("afterDestroy", async (user) => {
-  await Promise.all([
-    Hall.destroy({ force: true, where: { userId: user.dataValues.id } }),
-    UserReservations.destroy({
-      force: true,
-      where: { userId: user.dataValues.id },
-    }),
-  ]);
-});
 
 export const Hall = sequelize.define<Tables["Hall"]>("hall", {
   id: {
@@ -69,6 +60,7 @@ export const Hall = sequelize.define<Tables["Hall"]>("hall", {
   userId: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
+    onDelete: "CASCADE",
     references: {
       model: User,
       key: "id",
@@ -77,19 +69,6 @@ export const Hall = sequelize.define<Tables["Hall"]>("hall", {
 });
 User.hasMany(Hall);
 Hall.belongsTo(User);
-Hall.addHook("afterDestroy", async (hall) => {
-  await Promise.all([
-    HallImages.destroy({ force: true, where: { hallId: hall.dataValues.id } }),
-    HallServices.destroy({
-      force: true,
-      where: { hallId: hall.dataValues.id },
-    }),
-    UserReservations.destroy({
-      force: true,
-      where: { hallId: hall.dataValues.id },
-    }),
-  ]);
-});
 
 export const HallImages = sequelize.define<Tables["HallImages"]>(
   "hall-images",
@@ -106,6 +85,7 @@ export const HallImages = sequelize.define<Tables["HallImages"]>(
     hallId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
+      onDelete: "CASCADE",
       references: {
         model: Hall,
         key: "id",
@@ -143,6 +123,7 @@ export const HallServices = sequelize.define<Tables["HallServices"]>(
     hallId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
+      onDelete: "CASCADE",
       references: {
         model: Hall,
         key: "id",
@@ -152,14 +133,6 @@ export const HallServices = sequelize.define<Tables["HallServices"]>(
 );
 Hall.hasMany(HallServices);
 HallServices.belongsTo(Hall);
-HallServices.addHook("afterDestroy", async (service) => {
-  await Promise.all([
-    UserReservationServices.destroy({
-      force: true,
-      where: { serviceId: service.dataValues.id },
-    }),
-  ]);
-});
 
 export const UserReservations = sequelize.define<Tables["UserReservations"]>(
   "user-reservations",
@@ -180,6 +153,7 @@ export const UserReservations = sequelize.define<Tables["UserReservations"]>(
     hallId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
+      onDelete: "CASCADE",
       references: {
         model: Hall,
         key: "id",
@@ -188,6 +162,7 @@ export const UserReservations = sequelize.define<Tables["UserReservations"]>(
     userId: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
+      onDelete: "CASCADE",
       references: {
         model: User,
         key: "id",
@@ -199,14 +174,6 @@ User.hasMany(UserReservations);
 UserReservations.belongsTo(User);
 Hall.hasMany(UserReservations);
 UserReservations.belongsTo(Hall);
-UserReservations.addHook("afterDestroy", async (reservation) => {
-  await Promise.all([
-    UserReservationServices.destroy({
-      force: true,
-      where: { reservationId: reservation.dataValues.id },
-    }),
-  ]);
-});
 
 export const UserReservationServices = sequelize.define<
   Tables["UserReservationServices"]
@@ -219,6 +186,7 @@ export const UserReservationServices = sequelize.define<
   reservationId: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
+    onDelete: "CASCADE",
     references: {
       model: UserReservations,
       key: "id",
@@ -227,6 +195,7 @@ export const UserReservationServices = sequelize.define<
   serviceId: {
     type: DataTypes.BIGINT.UNSIGNED,
     allowNull: false,
+    onDelete: "CASCADE",
     references: {
       model: HallServices,
       key: "id",
