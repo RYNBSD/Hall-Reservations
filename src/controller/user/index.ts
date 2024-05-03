@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import type { TResponse } from "../../types/index.js";
 import { StatusCodes } from "http-status-codes";
 import { model } from "../../model/index.js";
+import reservations from "./reservations.js";
+import hall from "./hall.js";
 
 export default {
   async profile(
@@ -26,9 +28,22 @@ export default {
       },
     });
   },
-  async update(req: Request, res: Response<TResponse["Body"]["Success"]>) {},
-  async remove(
+  async update(
     req: Request,
+    res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
+  ) {
+    const user = res.locals.user!;
+
+    await user.update({});
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        user: user.dataValues,
+      },
+    });
+  },
+  async remove(
+    _req: Request,
     res: Response<TResponse["Body"]["Success"], TResponse["Locals"]>
   ) {
     const user = res.locals.user!;
@@ -37,4 +52,6 @@ export default {
         success: true,
       });
   },
+  reservations,
+  hall,
 } as const;
