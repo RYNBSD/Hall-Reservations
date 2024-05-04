@@ -212,11 +212,19 @@ export default {
   ) {
     const { Body, Params } = Update;
     const { id } = Params.parse(req.params);
-    const { name, description, location, price, people, removedImages } =
-      Body.parse(req.body);
+    const {
+      name,
+      description,
+      location,
+      price,
+      people,
+      servicesName,
+      servicesPrice,
+      servicesType,
+    } = Body.parse(req.body);
 
     const user = res.locals.user!;
-    const { Hall, HallImages } = model.db;
+    const { Hall, HallImages, HallServices } = model.db;
 
     const hall = await Hall.findOne({
       where: { id, userId: user.dataValues.id },
@@ -235,19 +243,16 @@ export default {
       }
     );
 
-    const removedImagesArr = removedImages
-      .split(",")
-      .map((image) => parseInt(image.trim()))
-      .filter((image) => !isNaN(image) && image > 0);
     await HallImages.destroy({
       force: true,
-      where: { hallId: hall.dataValues.id, id: removedImagesArr },
+      where: { hallId: hall.dataValues.id },
       transaction,
     });
 
-    const images = req.files;
-    if (!Array.isArray(images)) throw new Error("Invalid images");
+    const files = req.files!;
+    if (Array.isArray(files)) throw new Error("Invalid files");
 
+    const images = files.images;
     const imagesArr = images
       .filter(
         (image) =>
@@ -266,6 +271,86 @@ export default {
     const imagesList = await HallImages.findAll({
       where: { hallId: hall.dataValues.id },
       transaction,
+    });
+
+    await HallServices.destroy({
+      force: true,
+      where: { hallId: hall.dataValues.id },
+      transaction,
+    });
+
+    const servicesNameArr = servicesName
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
+    if (
+      servicesName.length > 0 &&
+      servicesName.split(",").length !== servicesNameArr.length
+    )
+      throw new Error("Invalid services name");
+
+    const servicesPriceArr = servicesPrice
+      .split(",")
+      .map((price) => parseInt(price.trim()))
+      .filter((price) => !isNaN(price) && price > 0);
+    if (
+      servicesPrice.length > 0 &&
+      servicesPrice.split(",").length !== servicesPriceArr.length
+    )
+      throw new Error("Invalid services price");
+
+    const servicesTypeArr = servicesType
+      .split(",")
+      .map((type) => type.trim().toLowerCase())
+      .filter((type) => HALL_SERVICE_TYPE.includes(type));
+    if (
+      servicesType.length > 0 &&
+      servicesType.split(",").length !== servicesTypeArr.length
+    )
+      throw new Error("invalid services type");
+
+    if (
+      servicesNameArr.length !== servicesPriceArr.length ||
+      servicesPriceArr.length !== servicesTypeArr.length
+    )
+      throw new Error("Incompatible service options");
+
+    const servicesImage = files.servicesImage;
+    let servicesImageArr: string[] = [];
+
+    if (servicesImage && servicesImage.length > 0) {
+      servicesImageArr = servicesImage
+        .filter(
+          (image) =>
+            image.mimetype.toLowerCase().startsWith("image/") &&
+            image.buffer.length > 0
+        )
+        .map(
+          (image) =>
+            `data:${image.mimetype};base64,${image.buffer.toString("base64")}`
+        );
+      if (servicesImage.length !== servicesImageArr.length)
+        throw new Error("Invalid services image");
+
+      if (servicesImage.length !== servicesNameArr.length)
+        throw new Error("Incompatible image with services");
+    }
+
+    const servicesBulk = [];
+    for (let i = 0; i < servicesNameArr.length; i++) {
+      servicesBulk.push({
+        name: servicesNameArr[i],
+        price: servicesPriceArr[i],
+        type: servicesTypeArr[i] as (typeof HALL_SERVICE_TYPE)[number],
+        image: servicesImageArr[i],
+        hallId: hall.dataValues.id,
+      });
+    }
+
+    await HallServices.bulkCreate(servicesBulk, {
+      fields: ["name", "price", "image", "type", "hallId"],
+      transaction,
+      returning: true,
     });
 
     res.status(StatusCodes.OK).json({

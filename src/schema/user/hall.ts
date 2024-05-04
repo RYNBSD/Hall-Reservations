@@ -25,7 +25,9 @@ export default {
       location: z.string().trim().min(1),
       price: z.coerce.number(),
       people: z.coerce.number(),
-      removedImages: z.string().trim(),
+      servicesName: z.string().trim(),
+      servicesPrice: z.string().trim(),
+      servicesType: z.string().trim(),
     }),
     Params: z.object({
       id: z.coerce.number(),

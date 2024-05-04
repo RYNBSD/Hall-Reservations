@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 export default {
+  Reservation: {
+    Params: z.object({
+      id: z.coerce.number(),
+    }),
+  },
   Create: {
     Body: z.object({
       hallId: z.coerce.number(),

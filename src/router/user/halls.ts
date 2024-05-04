@@ -19,6 +19,10 @@ halls.post(
   handleAsync(create)
 );
 
-halls.put("/:id", handleAsync(upload.array("images")), handleAsync(update));
+halls.put(
+  "/:id",
+  handleAsync(upload.fields([{ name: "images" }, { name: "servicesImage" }])),
+  handleAsync(update)
+);
 
 halls.delete("/:id", handleAsync(remove));
