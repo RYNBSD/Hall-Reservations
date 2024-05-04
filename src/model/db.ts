@@ -202,7 +202,7 @@ export const UserReservationServices = sequelize.define<
     },
   },
 });
-UserReservations.hasMany(UserReservationServices);
-UserReservationServices.belongsTo(UserReservations);
-HallServices.hasMany(UserReservationServices);
-UserReservationServices.belongsTo(HallServices);
+UserReservations.hasMany(UserReservationServices, { foreignKey: "reservationId" });
+UserReservationServices.belongsTo(UserReservations, { foreignKey: "reservationId" });
+HallServices.hasMany(UserReservationServices, { foreignKey: "serviceId" });
+UserReservationServices.belongsTo(HallServices, { foreignKey: "serviceId" });
