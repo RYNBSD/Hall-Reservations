@@ -194,32 +194,39 @@ export default {
     });
     if (reservation === null) throw new Error("Reservation don't exists");
 
-    const isReservationExists = await UserReservations.findOne({
-      where: {
-        hallId: reservation.dataValues.hallId,
-        [Op.or]: [
-          { start: { [Op.between]: [start, end] } },
-          { end: { [Op.between]: [start, end] } },
-        ],
-      },
-      plain: true,
-      limit: 1,
-      transaction,
-    });
-    if (isReservationExists !== null)
-      throw new Error("reservation already exists");
-
-    reservation.update(
-      {
-        start,
-        end,
-      },
-      {
-        fields: ["start", "end"],
-        returning: true,
+    if (
+      reservation.dataValues.start.getTime() !== start.getTime() ||
+      reservation.dataValues.end.getTime() !== end.getTime()
+    ) {
+      const isReservationExists = await UserReservations.findOne({
+        where: {
+          hallId: reservation.dataValues.hallId,
+          [Op.or]: [
+            { start: { [Op.between]: [start, end] } },
+            { end: { [Op.between]: [start, end] } },
+          ],
+        },
+        plain: true,
+        limit: 1,
         transaction,
-      }
-    );
+      });
+
+      if (isReservationExists !== null)
+        throw new Error("reservation already exists");
+
+      await reservation.update(
+        {
+          start,
+          end,
+        },
+        {
+          fields: ["start", "end"],
+          returning: true,
+          transaction,
+        }
+      );
+    }
+
     await UserReservationServices.destroy({
       force: true,
       where: {
@@ -233,8 +240,9 @@ export default {
 
     const servicesArr = services
       .split(",")
-      .map((service) => Number(service.trim()))
+      .map((service) => parseInt(service.trim()))
       .filter((service) => !isNaN(service) && service > 0);
+
     const checkServices = await Promise.all(
       servicesArr.map((service) =>
         HallServices.findOne({
